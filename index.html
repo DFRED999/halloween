@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7a2cff">
+<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#7a2cff"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"><meta name="apple-mobile-web-app-title" content="הלווין"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>טריק או טריט בנווה אפק</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -105,6 +105,8 @@ h1{font-family:var(--f-display);font-weight:400;font-size:clamp(30px,6vw,52px);l
 @keyframes hop{20%{transform:translate(-14px,-18px)}50%{transform:translate(10px,-26px)}80%{transform:translate(-6px,-10px)}}
 @keyframes flap{to{transform:scaleY(.55)}}
 @media (prefers-reduced-motion:reduce){.float,.flap,.float.fly{animation:none}}
+.sndbtn{border:1.5px solid var(--orange);background:transparent;color:var(--orange);font:700 13.5px var(--f-body);padding:7px 11px;border-radius:12px;cursor:pointer}
+.sndbtn[aria-pressed="true"]{background:var(--orange);color:var(--ink)}
 /* full-screen surprises */
 .fx{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
 .bigbat{position:absolute;left:50%;top:42%;width:180px;height:180px;color:#1c1420;animation:swoop 2.6s cubic-bezier(.5,0,.75,.4) forwards}
@@ -175,11 +177,11 @@ use[href="#bat"]{color:#ff8a1f} .webc{color:#ff7a0f}
 [data-look="day"] .bld{fill:#5a2d82;fill-opacity:.12;stroke:#5a2d82;stroke-opacity:.25}
 [data-look="day"] [class^="c-"]{stroke:#1c1420}
 [data-look="day"] [class^="w-"]{stroke:#ffffff}
-[data-look="day"] .w-t,[data-look="day"] .w-s{stroke:#1c1420}
+[data-look="day"] .w-t,[data-look="day"] .w-s{stroke:#ffffff}
 [data-look="day"] .w-v{stroke:#fff3e6}
 [data-look="day"] .w-f{stroke:#8a5a3a;stroke-width:1.4}
 [data-look="day"] .sl{fill:#1c1420}
-[data-look="day"] .sl-t,[data-look="day"] .sl-s{fill:#ffffff}
+[data-look="day"] .sl-t,[data-look="day"] .sl-s{fill:#1c1420}
 [data-look="day"] .glow{stroke-opacity:.18}
 [data-look="day"] .chev{stroke:#ffffff}
 [data-look="day"] .pin .nb{fill:#fff;stroke:var(--slime)} [data-look="day"] .pin .nt{fill:var(--slime)}
@@ -230,6 +232,7 @@ use[href="#bat"]{color:#ff8a1f} .webc{color:#ff7a0f}
       <button id="lDay" aria-pressed="true">☀ לבנה</button>
       <button id="lNight" aria-pressed="false">☾ לילה</button>
     </div>
+    <button class="sndbtn" id="snd" type="button" aria-pressed="false">🔇 צלילים</button>
     <div class="prog" aria-live="polite"><b id="pc">0/9</b><div class="bar"><i id="pb"></i></div>בתים</div>
   </div>
 </header>
@@ -1543,8 +1546,30 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')drawer(false)});
  function flutter(){const bats=[...document.querySelectorAll('#decos .float:has(.flap)')].sort(()=>Math.random()-.5).slice(0,6);
   bats.forEach((g,i)=>setTimeout(()=>{g.classList.add('fly');setTimeout(()=>g.classList.remove('fly'),3300);},i*350));}
  const loop=(fn,min,max,first)=>{setTimeout(function go(){if(ok())fn();setTimeout(go,rnd(min,max)*1000);},first*1000);};
- loop(flutter,80,140,20);loop(()=>window.batFly(),150,240,45);loop(()=>window.pumpkinBoom(),200,320,110);
+ loop(flutter,80,140,20);setTimeout(()=>window.__wrapSounds&&window.__wrapSounds(),0);let fxi=0;setInterval(()=>{if(!ok())return;(fxi++%2?window.pumpkinBoom:window.batFly)();},10000);
 })();
+// ---- sounds (off by default, synthesized, no files) ----
+(function(){let AC=null,on=false;try{on=localStorage.getItem('halloween-sound')==='1'}catch(e){}
+ const btn=document.getElementById('snd');const show=()=>{btn.setAttribute('aria-pressed',on);btn.textContent=(on?'🔊':'🔇')+' צלילים';};show();
+ const ctx=()=>{if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C();}if(AC.state==='suspended')AC.resume();return AC;};
+ const noise=(a,dur)=>{const b=a.createBuffer(1,a.sampleRate*dur,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=a.createBufferSource();s.buffer=b;return s;};
+ function cackle(a,t0){const f=a.createBiquadFilter();f.type='bandpass';f.frequency.value=1250;f.Q.value=2.5;const g=a.createGain();g.gain.value=.5;f.connect(g).connect(a.destination);
+  const pitches=[760,820,880,840,780,700,620];pitches.forEach((p,i)=>{const t=t0+i*.17,o=a.createOscillator(),o2=a.createOscillator(),e=a.createGain();o.type='sawtooth';o2.type='square';
+   o.frequency.setValueAtTime(p*1.15,t);o.frequency.exponentialRampToValueAtTime(p*.8,t+.13);o2.frequency.setValueAtTime(p*1.5,t);o2.frequency.exponentialRampToValueAtTime(p*1.1,t+.13);
+   e.gain.setValueAtTime(0,t);e.gain.linearRampToValueAtTime(.6,t+.015);e.gain.exponentialRampToValueAtTime(.001,t+.15);o.connect(e);o2.connect(e);e.connect(f);o.start(t);o2.start(t);o.stop(t+.16);o2.stop(t+.16);});}
+ function boom(a,t0){const n=noise(a,.7),lp=a.createBiquadFilter(),g=a.createGain();lp.type='lowpass';lp.frequency.setValueAtTime(2500,t0);lp.frequency.exponentialRampToValueAtTime(150,t0+.6);
+  g.gain.setValueAtTime(.9,t0);g.gain.exponentialRampToValueAtTime(.001,t0+.65);n.connect(lp).connect(g).connect(a.destination);n.start(t0);
+  const o=a.createOscillator(),og=a.createGain();o.frequency.setValueAtTime(140,t0);o.frequency.exponentialRampToValueAtTime(40,t0+.4);og.gain.setValueAtTime(.9,t0);og.gain.exponentialRampToValueAtTime(.001,t0+.45);o.connect(og).connect(a.destination);o.start(t0);o.stop(t0+.5);}
+ function bat(a,t0){const n=noise(a,1.6),bp=a.createBiquadFilter(),g=a.createGain();bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueAtTime(300,t0);bp.frequency.exponentialRampToValueAtTime(1800,t0+1.1);bp.frequency.exponentialRampToValueAtTime(400,t0+1.6);
+  g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.5,t0+1.0);g.gain.exponentialRampToValueAtTime(.001,t0+1.6);n.connect(bp).connect(g).connect(a.destination);n.start(t0);
+  for(let i=0;i<4;i++){const t=t0+.15+i*.13,o=a.createOscillator(),e=a.createGain();o.frequency.setValueAtTime(4200,t);o.frequency.exponentialRampToValueAtTime(2400,t+.05);e.gain.setValueAtTime(.18,t);e.gain.exponentialRampToValueAtTime(.001,t+.06);o.connect(e).connect(a.destination);o.start(t);o.stop(t+.07);}}
+ btn.addEventListener('click',()=>{on=!on;try{localStorage.setItem('halloween-sound',on?'1':'0')}catch(e){}show();if(on){const a=ctx();if(a)cackle(a,a.currentTime+.05);}});
+ const wrap=(name,fn)=>{const orig=window[name];if(!orig)return;window[name]=function(){orig();if(on){const a=ctx();if(a)fn(a,a.currentTime);}};};
+ window.__wrapSounds=()=>{wrap('batFly',(a,t)=>bat(a,t));wrap('pumpkinBoom',(a,t)=>{boom(a,t+.95);cackle(a,t+1.25);});};
+})();
+// ---- keep the screen on while the page is open ----
+(function(){let wl=null;const keep=async()=>{try{if('wakeLock' in navigator&&!wl&&document.visibilityState==='visible'){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null;});}}catch(e){}};
+ document.addEventListener('pointerdown',keep);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')keep();});keep();})();
 
 // ---- live location (own site only) ----
 (function(){const K=Math.cos(32.093*Math.PI/180)*111320;let watch=null,acc,dot,first=true;
