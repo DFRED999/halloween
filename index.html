@@ -1195,24 +1195,25 @@ render();
 <script type="module">
 // ===== הדביקו כאן את firebaseConfig מ-Firebase Console (Project settings ← Your apps) =====
 const FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyDKM2D_9fk6SrmKv16LQOoRAxgfRj5QLbo",
+  authDomain: "halloween-449f0.firebaseapp.com",
+  databaseURL: "https://halloween-449f0-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "halloween-449f0",
+  storageBucket: "halloween-449f0.firebasestorage.app",
+  messagingSenderId: "522232568886",
+  appId: "1:522232568886:web:705fa436a8d98801170c97"
 };
-// המסמך ב-Firestore שבו נשמרים הסימונים המשותפים
+// הנתיב ב-Realtime Database שבו נשמרים הסימונים המשותפים
 const EVENT_DOC = "halloween/neve-afek-2026";
 // ==========================================================================================
 const offline=t=>window.setSync(false,t);
 if(!FIREBASE_CONFIG||!FIREBASE_CONFIG.apiKey||FIREBASE_CONFIG.apiKey.startsWith('PASTE')){offline('מצב מקומי: הסימונים נשמרים רק בטלפון הזה');}
 else{try{
   const {initializeApp}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-  const {getFirestore,doc,onSnapshot,setDoc}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-  const db=getFirestore(initializeApp(FIREBASE_CONFIG));const ref=doc(db,...EVENT_DOC.split('/'));
-  window.sharedSet=(id,v)=>setDoc(ref,{[id]:v},{merge:true}).catch(()=>offline('הסימון לא נשלח, בדקו חיבור לאינטרנט'));
-  onSnapshot(ref,s=>{window.applyRemote(s.data()||{});window.setSync(true,'משותף: כל סימון מופיע אצל כולם');},()=>offline('אין חיבור לשרת, הסימונים נשמרים רק בטלפון הזה'));
+  const {getDatabase,ref,onValue,set}=await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+  const db=getDatabase(initializeApp(FIREBASE_CONFIG));const base=ref(db,EVENT_DOC);
+  window.sharedSet=(id,v)=>set(ref(db,EVENT_DOC+'/'+id),v).catch(()=>offline('הסימון לא נשלח, בדקו חיבור לאינטרנט'));
+  onValue(base,s=>{window.applyRemote(s.val()||{});window.setSync(true,'משותף: כל סימון מופיע אצל כולם');},()=>offline('אין חיבור לשרת, הסימונים נשמרים רק בטלפון הזה'));
 }catch(e){offline('אין חיבור לשרת, הסימונים נשמרים רק בטלפון הזה');}}
 </script>
 </body></html>
